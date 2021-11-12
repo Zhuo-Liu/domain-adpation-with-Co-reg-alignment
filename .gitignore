@@ -1,0 +1,2 @@
+data/dataset/SVHN/*
+data/dataset/MNIST/lmdb
