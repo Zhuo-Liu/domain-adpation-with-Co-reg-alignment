@@ -31,10 +31,10 @@ def load_weights(net, path, gpu=True):
 
 def main():
     #args = get_argument()
-    #config = Configs(args.model_index)
-    config = Configs()
+    config = Configs(0)
     net = build_small_model(config.ins_norm, False if config.lambda_div == 0 else True)
 
+    #if config.mode in [0, -1] and not args.test_only:
     if config.mode in [0, -1]:
         config.dump_to_file(os.path.join(config.save_path, 'exp_config.txt'))
 
@@ -43,7 +43,6 @@ def main():
         test_data_loader = get_lmdb_loader(config.source_lmdb, config.target_lmdb, 'tdata', 'tlabel', batch_size=config.batch_size)
 
         net_list = [net]
-        #for idx in range(1, args.num_net):
         for idx in range(1, 2):
             tmp_net = build_small_model(config.ins_norm, False if config.lambda_div == 0 else True)
             net_list.append(tmp_net)
@@ -54,7 +53,7 @@ def main():
         trainer.train_all()
 
     # elif config.mode == 1 or args.test_only:
-    #     tdata, tlabel, tdata_test, tdata_test_label = get_svhn('D:/workspace/dataset/digits/SVHN/')
+    #     #tdata, tlabel, tdata_test, tdata_test_label = get_svhn('D:/workspace/dataset/digits/SVHN/')
     #     #tdata, tlabel, tdata_test, tdata_test_label = get_mnist('D:/workspace/DA/dataset/MNIST/')
     #     test_data_loader = get_data_loader(tdata_test, tdata_test_label[:, 0], tdata_test, tdata_test_label[:, 0], shuffle=False, batch_size=32)
         

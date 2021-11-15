@@ -2,6 +2,8 @@ import os
 import numpy as np
 from scipy import io
 from skimage.transform import resize
+from scipy import misc
+from PIL import Image
 
 import lmdb
 
@@ -20,7 +22,8 @@ def load_mnist_image(path):
                 break
             
             img = img.byteswap().reshape(row, col)
-            img = resize(img, (32, 32))
+            #img = misc.resize(img, (32, 32))
+            img = np.array(Image.fromarray(img).resize(size=(32,32)))
             image_list.append(img)
     return image_list
 
@@ -120,7 +123,7 @@ def create_lmdb_mnist(mode='train'):
             txn.put((str(idx)).encode(), ttl[idx], db=tlabel)
 
 def create_lmdb_svhn(mode='train'):
-    env = lmdb.open('./data/dataset/SVHN/lmdb', max_dbs=6, map_size=int(3e9))
+    env = lmdb.open('./data/dataset/SVHN/lmdb', max_dbs=6, map_size=int(1e9))
     data = env.open_db(("data").encode())
     label = env.open_db(("label").encode())
     vdata = env.open_db(("vdata").encode())

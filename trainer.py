@@ -174,9 +174,11 @@ class Trainer():
                 CCloss.backward(retain_graph=True)
                 optim.step()
 
-                optim_dom.zero_grad()
-                DDloss.backward(retain_graph=True)
-                optim_dom.step()
+                # optim_dom.zero_grad()
+                # DDloss.backward(retain_graph=True)
+                # optim.step()
+
+                #optim_dom.step()
 
                 self.update_exp_net(idx)
 
@@ -282,6 +284,7 @@ class Trainer():
         new_state_dict = self.nets[idx].state_dict()
         old_state_dict = self.exp_net[idx].state_dict()
         for key in old_state_dict:
-            old_state_dict[key].mul_(1 - momentum).add_(momentum * new_state_dict[key])
+            if(old_state_dict[key].dtype != torch.int64):
+                old_state_dict[key].mul_(1 - momentum).add_(momentum * new_state_dict[key])
 
         self.exp_net[idx].load_state_dict(old_state_dict)

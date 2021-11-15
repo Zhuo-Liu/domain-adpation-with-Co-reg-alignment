@@ -1,7 +1,7 @@
 import os
 
 class Configs:
-    def __init__(self):
+    def __init__(self, model_index=0):
         self.gpu = True
         self.data_source = 'mnist' #'svhn'
         self.data_target = 'svhn'

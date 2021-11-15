@@ -2,3 +2,4 @@ data/dataset/SVHN/test_32x32.mat
 data/dataset/SVHN/train_32x32.mat
 data/dataset/SVHN/lmdb/
 data/dataset/MNIST/lmdb/
+model_0/

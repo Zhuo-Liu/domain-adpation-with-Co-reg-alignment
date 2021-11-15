@@ -105,13 +105,13 @@ class LMDBDigitDataset(Dataset):
         if idx >= self.slength:
             sidx = str(int(np.random.randint(self.slength))).encode()
             simg = self.source_txn.get(sidx, db=self.sdata)
-            simg = np.frombuffer(simg, 'uint8').reshape(32, 32, 3,-1)
+            simg = np.frombuffer(simg, 'uint8').reshape(32, 32, 3)
             slabel = self.source_txn.get(sidx, db=self.slabel)
             slabel = np.frombuffer(slabel, 'uint8')[0]#.reshape(1)
         else:
             sidx = str(idx).encode()
             simg = self.source_txn.get(sidx, db=self.sdata)
-            simg = np.frombuffer(simg, 'uint8').reshape(32, 32, 3,-1)
+            simg = np.frombuffer(simg, 'uint8').reshape(32, 32, 3)
             slabel = self.source_txn.get(sidx, db=self.slabel)
             slabel = np.frombuffer(slabel, 'uint8')[0]#.reshape(1)
 
@@ -119,13 +119,13 @@ class LMDBDigitDataset(Dataset):
         if idx >= self.tlength:
             tidx = str(int(np.random.randint(self.tlength))).encode()
             timg = self.target_txn.get(tidx, db=self.tdata)
-            timg = np.frombuffer(timg, 'uint8').reshape(32, 32, 3,-1)
+            timg = np.frombuffer(timg, 'uint8').reshape(32, 32, 3)
             tlabel = self.target_txn.get(tidx, db=self.tlabel)
             tlabel = np.frombuffer(tlabel, 'uint8')[0]#.reshape(1)
         else:
             tidx = str(idx).encode()
             timg = self.target_txn.get(tidx, db=self.tdata)
-            timg = np.frombuffer(timg, 'uint8').reshape(32, 32, 3,-1)
+            timg = np.frombuffer(timg, 'uint8').reshape(32, 32, 3)
             tlabel = self.target_txn.get(tidx, db=self.tlabel)
             tlabel = np.frombuffer(tlabel, 'uint8')[0]#.reshape(1)
 
