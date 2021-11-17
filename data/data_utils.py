@@ -1,7 +1,7 @@
 import os
 import numpy as np
 from scipy import io
-from skimage.transform import resize
+#from skimage.transform import resize
 from scipy import misc
 from PIL import Image
 

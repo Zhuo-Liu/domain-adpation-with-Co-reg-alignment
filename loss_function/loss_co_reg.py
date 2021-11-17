@@ -10,7 +10,8 @@ def diverse_loss(feat1, feat2, margin):
 
 def agreement_loss(prob1, prob2):
     #return torch.abs(torch.mean(torch.sum(prob1 - prob2, -1)))
-    return torch.mean(torch.sum(torch.abs(prob1 - prob2), -1))
+    loss =  torch.mean(torch.sum(torch.abs(prob1 - prob2), -1))
+    return loss
 
 
 def cross_entropy_loss(logits):
