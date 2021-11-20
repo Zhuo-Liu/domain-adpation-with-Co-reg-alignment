@@ -167,9 +167,6 @@ class Trainer():
                 CCloss = closs + self.config.lambda_dom * dom_loss + self.config.lambda_ent * ent_loss -\
                     self.config.lambda_div * div_loss + self.config.lambda_agree * agree_loss + svat_loss_list[idx] + tvat_loss_list[idx] * self.config.lambda_ent
                 DDloss = dom_inv_loss
-                # CCloss = closs + self.config.lambda_dom * dom_loss+ self.config.lambda_ent* ent_loss -\
-                #      self.config.lambda_div * div_loss + self.config.lambda_agree * agree_loss
-                # #CCloss = self.config.lambda_agree * agree_loss
 
                 self.writer.add_scalar('net_{}/closs'.format(idx), float(closs), self.len_train_data * epoch + step)
                 self.writer.add_scalar('net_{}/ent_loss'.format(idx), float(ent_loss), self.len_train_data * epoch + step)
@@ -192,7 +189,6 @@ class Trainer():
                 optim_dom = self.optim_dom[idx]   
                 optim.step()
                 optim_dom.step()
-                # optim.step()
 
                 self.update_exp_net(idx)
 
@@ -242,11 +238,11 @@ class Trainer():
 
                 logits, dom_logits, _ = net(torch.cat([simage, timage], 0))
 
-                closs = self.criterion[idx](logits[:simage.size(0)], slabel)
-                ent_loss = cross_entropy_loss(logits[simage.size(0):])
+                closs = self.criterion[idx](logits[:simage.size(0)], slabel).cpu()
+                ent_loss = cross_entropy_loss(logits[simage.size(0):]).cpu()
                 
-                dom_loss = self.dom_criterion[idx](dom_logits, dom_label)
-                dom_inv_loss = self.dom_inv_criterion[idx](dom_logits, dom_inv_label)
+                dom_loss = self.dom_criterion[idx](dom_logits, dom_label).cpu()
+                dom_inv_loss = self.dom_inv_criterion[idx](dom_logits, dom_inv_label).cpu()
                 CCloss = closs + self.config.lambda_dom * dom_loss
 
                 loss.append([closs, dom_loss, dom_inv_loss, CCloss, ent_loss])
@@ -298,7 +294,9 @@ class Trainer():
         new_state_dict = self.nets[idx].state_dict()
         old_state_dict = self.exp_net[idx].state_dict()
         for key in old_state_dict:
-            if(old_state_dict[key].dtype != torch.int64):
+            if(old_state_dict[key].dtype != torch.int64): # don't update batch number!!
                 old_state_dict[key].mul_(1 - momentum).add_(momentum * new_state_dict[key])
+            else:
+                old_state_dict[key] = new_state_dict[key]
 
         self.exp_net[idx].load_state_dict(old_state_dict)

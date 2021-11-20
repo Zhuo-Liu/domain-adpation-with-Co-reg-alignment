@@ -3,3 +3,6 @@ data/dataset/SVHN/train_32x32.mat
 data/dataset/SVHN/lmdb/
 data/dataset/MNIST/lmdb/
 model_0/
+__pycache__/
+data/__pycache__/
+loss_function/__pycache__/
