@@ -31,10 +31,10 @@ class Trainer():
 
         self.optim = []
         self.optim_dom = []
-        self.dom_criterion = [] # loss of domain alignment for each classifier
+        self.dom_criterion = []
         self.dom_inv_criterion = []
-        self.criterion = [] # Cross entropy for each classifier
-        self.vat_criterion = [] # Virtual adversarial loss for each classifier
+        self.criterion = []
+        self.vat_criterion = []
 
         for net in self.nets:
             category_param, dom_param = self.get_param_list(net)
@@ -69,7 +69,7 @@ class Trainer():
         for epoch in range(self.config.total_epoch):
             self.train_1_epoch(epoch)
             #self.save_net(self.exp_net, 'model_'+str(epoch+1))
-
+            '''
             for idx, net in enumerate(self.exp_net):
                 self.save_net(net, 'model_'+str(epoch+1), idx)
                 acc = self.val_(net, epoch, idx)
@@ -77,6 +77,9 @@ class Trainer():
                     self.save_net(net, 'model_best_{}'.format(idx), idx)
                     acc_best[idx] = acc
 
+                _ = self.val_(net, epoch, idx, mode='test')
+            '''
+            for idx, net in enumerate(self.nets):
                 _ = self.val_(net, epoch, idx, mode='test')
 
 
@@ -139,11 +142,11 @@ class Trainer():
                 for j in range(i + 1, len(feat_list)):
                     # diversoty loss
                     tmp_div_loss = diverse_loss(feat_list[i], feat_list[j], self.config.div_margin)
-                    div_loss = tmp_div_loss + div_loss
+                    div_loss += tmp_div_loss
 
                     # agree_loss
                     tmp_agree_loss = agreement_loss(prob_list[i], prob_list[j])
-                    agree_loss = agree_loss + tmp_agree_loss 
+                    agree_loss += tmp_agree_loss
 
             self.writer.add_scalar('div_loss', float(div_loss), self.len_train_data * epoch + step)
             self.writer.add_scalar('agree_loss', float(agree_loss), self.len_train_data * epoch + step)
@@ -154,16 +157,7 @@ class Trainer():
 
                 dom_loss = self.dom_criterion[idx](dom_logit_list[idx], dom_label) * 0.5
                 dom_inv_loss = self.dom_inv_criterion[idx](dom_logit_list[idx], dom_inv_label) * 0.5
-                
-                # VADA loss:
-                # closs: L_y(f_i;P_s)
-                # dom_loss: L_d(g_i#P_s,g_i#P_t) * 0.5 ?
-                # ent_loss: L_ce(f_i;P_t)
-                # svat_loss_list[i]: L_vt(f_i;P_s)
-                # tvat_loss_list[i]: L_vt(f_i;P_t)
-                # Co-DA loss:
-                # div_loss: D_g(g_1,g_2)
-                # agree_loss: L_p(f_1,f_2;P_t)
+
                 CCloss = closs + self.config.lambda_dom * dom_loss + self.config.lambda_ent * ent_loss -\
                     self.config.lambda_div * div_loss + self.config.lambda_agree * agree_loss + svat_loss_list[idx] + tvat_loss_list[idx] * self.config.lambda_ent
                 DDloss = dom_inv_loss
@@ -180,17 +174,19 @@ class Trainer():
                 optim_dom = self.optim_dom[idx]
 
                 optim.zero_grad()
-                optim_dom.zero_grad()
                 CCloss.backward(retain_graph=True)
+                #optim.step()
+
+                optim_dom.zero_grad()
                 DDloss.backward(retain_graph=True)
 
-            for idx in range(len(slogit_list)):        
+            for idx in range(len(slogit_list)):
                 optim = self.optim[idx]
-                optim_dom = self.optim_dom[idx]   
+                optim_dom = self.optim_dom[idx]
                 optim.step()
                 optim_dom.step()
 
-                self.update_exp_net(idx)
+                #self.update_exp_net(idx)
 
             pbar.set_description("CCloss %5f DDloss %5f epoch %d" % \
                 (round(float(CCloss), 5), round(float(DDloss), 5), epoch))
@@ -294,9 +290,6 @@ class Trainer():
         new_state_dict = self.nets[idx].state_dict()
         old_state_dict = self.exp_net[idx].state_dict()
         for key in old_state_dict:
-            if(old_state_dict[key].dtype != torch.int64): # don't update batch number!!
-                old_state_dict[key].mul_(1 - momentum).add_(momentum * new_state_dict[key])
-            else:
-                old_state_dict[key] = new_state_dict[key]
+            old_state_dict[key].mul_(1 - momentum).add_(momentum * new_state_dict[key])
 
         self.exp_net[idx].load_state_dict(old_state_dict)
