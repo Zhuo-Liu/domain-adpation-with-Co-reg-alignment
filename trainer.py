@@ -69,7 +69,7 @@ class Trainer():
         for epoch in range(self.config.total_epoch):
             self.train_1_epoch(epoch)
             #self.save_net(self.exp_net, 'model_'+str(epoch+1))
-            '''
+           
             for idx, net in enumerate(self.exp_net):
                 self.save_net(net, 'model_'+str(epoch+1), idx)
                 acc = self.val_(net, epoch, idx)
@@ -78,9 +78,9 @@ class Trainer():
                     acc_best[idx] = acc
 
                 _ = self.val_(net, epoch, idx, mode='test')
-            '''
-            for idx, net in enumerate(self.nets):
-                _ = self.val_(net, epoch, idx, mode='test')
+
+            #for idx, net in enumerate(self.nets):
+            #    _ = self.val_(net, epoch, idx, mode='test')
 
 
     def train_1_epoch(self, epoch):
@@ -186,7 +186,7 @@ class Trainer():
                 optim.step()
                 optim_dom.step()
 
-                #self.update_exp_net(idx)
+                self.update_exp_net(idx)
 
             pbar.set_description("CCloss %5f DDloss %5f epoch %d" % \
                 (round(float(CCloss), 5), round(float(DDloss), 5), epoch))
@@ -290,6 +290,9 @@ class Trainer():
         new_state_dict = self.nets[idx].state_dict()
         old_state_dict = self.exp_net[idx].state_dict()
         for key in old_state_dict:
-            old_state_dict[key].mul_(1 - momentum).add_(momentum * new_state_dict[key])
+            if (old_state_dict[key].dtype != torch.int64):  # don't update batch number!!
+                old_state_dict[key].mul_(1 - momentum).add_(momentum * new_state_dict[key])
+            else:
+                old_state_dict[key] = new_state_dict[key]
 
         self.exp_net[idx].load_state_dict(old_state_dict)
