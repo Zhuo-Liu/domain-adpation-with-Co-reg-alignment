@@ -8,7 +8,7 @@ class Configs:
         self.total_epoch = 80 # 80 for batch 64
         self.batch_size = 64
         self.lr = 1e-3
-        self.lambda_dom = 1e-2 # discriminator
+        self.lambda_dom = 1 # discriminator
         self.lambda_ent = 1e-2 # conditional entropy
         self.lambda_div = 1e-3 # co-regularized divergence
         self.div_margin = 10 # co-regularized divergence
