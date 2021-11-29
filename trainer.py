@@ -71,18 +71,18 @@ class Trainer():
             #self.save_net(self.exp_net, 'model_'+str(epoch+1))
 
             for idx, net in enumerate(self.exp_net):
-                self.save_net(net, 'model_'+str(epoch+1), idx)
-                acc = self.val_(net, epoch, idx)
+                self.save_net(self.exp_net[idx], 'model_'+str(epoch+1), idx)
+                acc = self.val_(self.exp_net[idx], epoch, idx)
                 if acc > acc_best[idx]:
-                    self.save_net(net, 'model_best_{}'.format(idx), idx)
+                    self.save_net(self.exp_net[idx], 'model_best_{}'.format(idx), idx)
                     acc_best[idx] = acc
 
-                _ = self.val_(net, epoch, idx, mode='test')
+                _ = self.val_(self.exp_net[idx], epoch, idx, mode='test')
 
 
     def train_1_epoch(self, epoch):
-        for net in self.nets:
-            net.train()
+        for idx in range(2):
+            self.nets[idx].train()
         pbar = tqdm(enumerate(self.train_data), total=len(self.train_data), ncols=100)
         for step, batchSample in pbar:
             simage = batchSample['simage'].float()
@@ -151,7 +151,6 @@ class Trainer():
             for idx in range(len(slogit_list)):                
                 closs = self.criterion[idx](slogit_list[idx], slabel)
                 ent_loss = cross_entropy_loss(tlogit_list[idx])
-
                 dom_loss = self.dom_criterion[idx](dom_logit_list[idx], dom_label) * 0.5
                 dom_inv_loss = self.dom_inv_criterion[idx](dom_logit_list[idx], dom_inv_label) * 0.5
                 
@@ -164,7 +163,7 @@ class Trainer():
                 # Co-DA loss:
                 # div_loss: D_g(g_1,g_2)
                 # agree_loss: L_p(f_1,f_2;P_t)
-                CCloss = closs + self.config.lambda_dom * dom_loss + self.config.lambda_ent * ent_loss -\
+                CCloss = 5*closs + self.config.lambda_dom * dom_loss + self.config.lambda_ent * ent_loss -\
                     self.config.lambda_div * div_loss + self.config.lambda_agree * agree_loss + svat_loss_list[idx] + tvat_loss_list[idx] * self.config.lambda_ent
                 DDloss = dom_inv_loss
 
@@ -180,8 +179,8 @@ class Trainer():
                 optim_dom = self.optim_dom[idx]
 
                 optim.zero_grad()
-                optim_dom.zero_grad()
                 CCloss.backward(retain_graph=True)
+                optim_dom.zero_grad()
                 DDloss.backward(retain_graph=True)
 
             for idx in range(len(slogit_list)):        
