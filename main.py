@@ -8,7 +8,7 @@ from deep_model.model import build_small_model
 from trainer import Trainer
 from data.data_utils import get_mnist, get_svhn
 from data.data_loader import get_data_loader, get_lmdb_loader
-from config import Configs
+from config import Configs, MODEL_INDEX
 
 import argparse
 
@@ -31,7 +31,7 @@ def load_weights(net, path, gpu=True):
 
 def main():
     #args = get_argument()
-    config = Configs(0)
+    config = Configs(MODEL_INDEX)
     net = build_small_model(config.ins_norm, False if config.lambda_div == 0 else True)
 
     #if config.mode in [0, -1] and not args.test_only:
