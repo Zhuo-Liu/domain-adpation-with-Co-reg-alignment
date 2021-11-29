@@ -3,8 +3,8 @@ import os
 class Configs:
     def __init__(self, model_index=0):
         self.gpu = True
-        self.data_source = 'mnist' #'svhn'
-        self.data_target = 'svhn'
+        self.data_source = 'mnist' #'svhn', 'mnist-m'
+        self.data_target = 'svhn' #'svhn'
         self.total_epoch = 80 # 80 for batch 64
         self.batch_size = 64
         self.lr = 1e-3

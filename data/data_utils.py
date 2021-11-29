@@ -4,6 +4,8 @@ from scipy import io
 #from skimage.transform import resize
 from scipy import misc
 from PIL import Image
+import torch
+from torchvision.datasets.utils import download_and_extract_archive
 
 import lmdb
 
@@ -86,7 +88,35 @@ def get_svhn(path):
     return train_img, train_label, test_img, test_label
 
 
-def create_lmdb_mnist(mode='train'):
+def get_mnist_m(path):
+    train_path = os.path.join(path, 'mnist_m_train.pt')
+    test_path = os.path.join(path, 'mnist_m_test.pt')
+    if not (os.path.exists(train_path) and os.path.exists(test_path)):
+        resources = [
+            ('https://github.com/liyxi/mnist-m/releases/download/data/mnist_m_train.pt.tar.gz',
+            '191ed53db9933bd85cc9700558847391'),
+            ('https://github.com/liyxi/mnist-m/releases/download/data/mnist_m_test.pt.tar.gz',
+            'e11cb4d7fff76d7ec588b1134907db59')
+        ]
+        os.makedirs(path, exist_ok=True)
+        for url, md5 in resources:
+            filename = url.rpartition('/')[2]
+            download_and_extract_archive(url, download_root=path,
+                                         extract_root=path,
+                                         filename=filename, md5=md5)
+
+    train_img, train_label = torch.load(train_path)
+    train_img = train_img.numpy()
+    train_label = train_label.numpy()
+
+    test_img, test_label = torch.load(test_path)
+    test_img = test_img.numpy()
+    test_label = test_label.numpy()
+
+    return train_img, train_label, test_img, test_label
+
+
+"""def create_lmdb_mnist(mode='train'):
     env = lmdb.open('./data/dataset/MNIST/lmdb', max_dbs=6, map_size=int(1e9))
     data = env.open_db(("data").encode())
     label = env.open_db(("label").encode())
@@ -156,9 +186,57 @@ def create_lmdb_svhn(mode='train'):
             txn.put((str(idx)).encode(), vvl[idx], db=vlabel)
         for idx in range(tt.shape[0]):
             txn.put((str(idx)).encode(), tt[idx], db=tdata)
+            txn.put((str(idx)).encode(), ttl[idx], db=tlabel)"""
+
+
+def create_lmdb(model_name='MNIST'):
+    model_path = os.path.join('./data/dataset/', model_name)
+    os.makedirs(model_path, exist_ok=True)
+    env = lmdb.open(os.path.join(model_path, 'lmdb'), max_dbs=6, map_size=int(1e9))
+    data = env.open_db(("data").encode())
+    label = env.open_db(("label").encode())
+    vdata = env.open_db(("vdata").encode())
+    vlabel = env.open_db(("vlabel").encode())
+    tdata = env.open_db(("tdata").encode())
+    tlabel = env.open_db(("tlabel").encode())
+
+    if model_name.lower() == 'mnist':
+        dd, ll, tt, ttl = get_mnist(model_path)
+    elif model_name.lower() == 'svhn':
+        dd, ll, tt, ttl = get_svhn(model_path)
+    elif model_name.lower() == 'mnist-m':
+        dd, ll, tt, ttl = get_mnist_m(model_path)
+    dd = dd.copy(order='C')
+    ll = ll.copy(order='C')
+    tt = tt.copy(order='C')
+    ttl = ttl.copy(order='C')
+
+    # random select 1000 sample as validation
+    np.random.seed(1)
+    num_val = 1000
+    rand_idx = np.random.permutation(len(dd))
+    vv, vvl = dd[rand_idx[:num_val]], ll[rand_idx[:num_val]]
+    dd, ll = dd[rand_idx[num_val:]], ll[rand_idx[num_val:]]
+    
+    print(dd[0].shape)
+    print(dd[0].dtype)
+    #return
+    with env.begin(write=True) as txn:
+        for idx in range(dd.shape[0]):
+            txn.put((str(idx)).encode(), dd[idx], db=data)
+            txn.put((str(idx)).encode(), ll[idx], db=label)
+        for idx in range(vv.shape[0]):
+            txn.put((str(idx)).encode(), vv[idx], db=vdata)
+            txn.put((str(idx)).encode(), vvl[idx], db=vlabel)
+        for idx in range(tt.shape[0]):
+            txn.put((str(idx)).encode(), tt[idx], db=tdata)
             txn.put((str(idx)).encode(), ttl[idx], db=tlabel)
 
+
 if __name__=='__main__':
-    create_lmdb_mnist('train')
-    create_lmdb_svhn('train')
+    #create_lmdb_mnist('train')
+    #create_lmdb_svhn('train')
+    create_lmdb('MNIST')
+    create_lmdb('SVHN')
+    create_lmdb('MNIST-M')
     
