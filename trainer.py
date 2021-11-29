@@ -120,8 +120,8 @@ class Trainer():
                 svat_loss_list.append(svat_loss)
                 tvat_loss_list.append(tvat_loss)
 
-                slogits, sdom_logits, sfeats = net(simage)
-                tlogits, tdom_logits, _ = net(timage, update_stats=True)
+                slogits, sdom_logits, sfeats = self.nets[idx](simage)
+                tlogits, tdom_logits, _ = self.nets[idx](timage, update_stats=True)
 
                 slogit_list.append(slogits)
                 tlogit_list.append(tlogits)
@@ -163,8 +163,9 @@ class Trainer():
                 # Co-DA loss:
                 # div_loss: D_g(g_1,g_2)
                 # agree_loss: L_p(f_1,f_2;P_t)
-                CCloss = 5*closs + self.config.lambda_dom * dom_loss + self.config.lambda_ent * ent_loss -\
-                    self.config.lambda_div * div_loss + self.config.lambda_agree * agree_loss + svat_loss_list[idx] + tvat_loss_list[idx] * self.config.lambda_ent
+                #CCloss = 5*closs + self.config.lambda_dom * dom_loss + self.config.lambda_ent * ent_loss -\
+                #    self.config.lambda_div * div_loss + self.config.lambda_agree * agree_loss + svat_loss_list[idx] + tvat_loss_list[idx] * self.config.lambda_ent
+                CCloss = (5*closs + svat_loss_list[idx]) + 1e-2*(ent_loss +  tvat_loss_list[idx]) + 1*dom_loss + 0.0 * agree_loss - 0.0 * div_loss
                 DDloss = dom_inv_loss
 
                 self.writer.add_scalar('net_{}/closs'.format(idx), float(closs), self.len_train_data * epoch + step)
@@ -213,6 +214,8 @@ class Trainer():
         loss = []
         total_correct = 0
         total_data = 0
+        total_correct2 = 0
+        total_data2 = 0
         data = self.val_data if mode == 'val' else self.test_data
         pbar = tqdm(enumerate(data), total=len(data), ncols=100)
         with torch.no_grad():
@@ -250,9 +253,15 @@ class Trainer():
                 total_correct += num_correct
                 total_data += num_all
 
+                num_correct2, num_all2, _ = self.cal_accuracy(logits[:simage.size(0)], slabel)
+                total_correct2 += num_correct2
+                total_data2 += num_all2
+
                 pbar.set_description(mode+(" acc: %5f epoch %d" % (round(float(num_correct) / num_all, 5), epoch)))
 
             acc = float(total_correct) / total_data
+            acc2 = float(total_correct2) / total_data2
+            print('accuracy on source data is:',acc2)
             if self.train_data is not None:
                 self.writer.add_scalar('net_{}/'.format(idx)+mode+'/acc', acc, epoch)
 
