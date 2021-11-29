@@ -5,6 +5,7 @@ from scipy import io
 from scipy import misc
 from PIL import Image
 import torch
+import torchvision
 from torchvision.datasets.utils import download_and_extract_archive
 
 import lmdb
@@ -105,11 +106,19 @@ def get_mnist_m(path):
                                          extract_root=path,
                                          filename=filename, md5=md5)
 
+    transform = torchvision.transforms.Resize(32)
+
     train_img, train_label = torch.load(train_path)
+    train_img = train_img.permute(0, 3, 1, 2)  # 60000, 28, 28, 3 -> 60000, 3, 28, 28
+    train_img = transform(train_img)
+    train_img = train_img.permute(0, 2, 3, 1)
     train_img = train_img.numpy()
     train_label = train_label.numpy()
 
     test_img, test_label = torch.load(test_path)
+    test_img = test_img.permute(0, 3, 1, 2)
+    test_img = transform(test_img)
+    test_img = test_img.permute(0, 2, 3, 1)
     test_img = test_img.numpy()
     test_label = test_label.numpy()
 
@@ -192,6 +201,7 @@ def create_lmdb_svhn(mode='train'):
 def create_lmdb(model_name='MNIST'):
     model_path = os.path.join('./data/dataset/', model_name)
     os.makedirs(model_path, exist_ok=True)
+    #print(os.path.join(model_path, 'lmdb'))
     env = lmdb.open(os.path.join(model_path, 'lmdb'), max_dbs=6, map_size=int(1e9))
     data = env.open_db(("data").encode())
     label = env.open_db(("label").encode())
