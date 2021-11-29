@@ -1,13 +1,14 @@
 import os
 
-MODEL_INDEX = 0
+MODEL_INDEX = 0 # [0, 1]   # Integer or list
 
 class Configs:
     def __init__(self, model_index=MODEL_INDEX):
         self.gpu = True
-        self.data_source = 'mnist' #'mnist', 'svhn', 'mnist-m'
+        self.model_index = model_index
+        self.data_source = 'mnist' # 'mnist' if model_index == 0 else 'svhn' #'mnist', 'svhn', 'mnist-m'
         self.data_target = 'svhn'
-        self.total_epoch = 80 # 80 for batch 64
+        self.total_epoch = 20 # 80 for batch 64
         self.batch_size = 64
         self.lr = 1e-3
         self.run_VADA = False # Whether to run this as plan VADA: 
@@ -20,7 +21,6 @@ class Configs:
         self.lambda_agree = 1e-1 # co-regularized agreement (ignored with VADA)
         self.vat_epsilon = 1.0 # vat epsilon
 
-        self.model_index = model_index
         self.ins_norm = True
         self.save_path = './model_{}'.format(self.model_index)
         #self.source_lmdb = './data/dataset/MNIST/lmdb'

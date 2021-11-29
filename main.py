@@ -29,7 +29,7 @@ def load_weights(net, path, gpu=True):
     return net
         
 
-def main():
+def main(model_index=MODEL_INDEX):
     #args = get_argument()
     config = Configs(MODEL_INDEX)
     net = build_small_model(config.ins_norm, False if config.lambda_div == 0 else True)
@@ -65,4 +65,8 @@ def main():
 
 if __name__=='__main__':
     torch.multiprocessing.set_start_method('spawn')
-    main()
+    if type(MODEL_INDEX) is list:
+        for model_index in MODEL_INDEX:
+            main(model_index)
+    else:
+        main(MODEL_INDEX)
