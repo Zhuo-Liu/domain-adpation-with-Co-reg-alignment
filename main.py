@@ -31,7 +31,7 @@ def load_weights(net, path, gpu=True):
 
 def main(model_index=MODEL_INDEX):
     #args = get_argument()
-    config = Configs(MODEL_INDEX)
+    config = Configs(model_index)
     net = build_small_model(config.ins_norm, False if config.lambda_div == 0 else True)
 
     #if config.mode in [0, -1] and not args.test_only:

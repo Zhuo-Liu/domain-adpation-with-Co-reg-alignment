@@ -360,21 +360,27 @@ class Trainer():
         #print("Plot!")
         # Plot source
         df1 = pd.DataFrame()
-        df1["y"] = [('source ' + str(x)) for x in slabel]
+        df1["y"] = [('s' + str(x.numpy())) for x in slabel]
         df1["comp-1"] = Embedded[:sdata.size(0), 0]
         df1["comp-2"] = Embedded[:sdata.size(0), 1]
         df1.sort_values(by=['y'], inplace=True)  # So that labels appear in order
         sns.scatterplot(x="comp-1", y="comp-2", hue=df1.y.tolist(), palette=sns.color_palette("deep", n_colors=class_num),
-                        data=df1, legend=False).set(title=title)
+                        data=df1).set(title=title)
 
         # Plot target
         df2 = pd.DataFrame()
-        df2["y"] = [('target ' + str(x)) for x in tlabel]
+        df2["y"] = [('t' + str(x.numpy())) for x in tlabel]
         df2["comp-1"] = Embedded[sdata.size(0):, 0]
         df2["comp-2"] = Embedded[sdata.size(0):, 1]
         df2.sort_values(by=['y'], inplace=True)
         sns.scatterplot(x="comp-1", y="comp-2", hue=df2.y.tolist(), palette=sns.color_palette("pastel", n_colors=class_num),
-                        data=df2, legend=False).set(title=title)
+                        data=df2).set(title=title)
+
+        # Fix legends
+        #handles, labels = plt.gca().get_legend_handles_labels()
+        #order = [(i//2)+(i%2)*10 for i in range(20)]
+        #plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], fontsize='xx-small')
+        plt.legend(ncol=2, fontsize='xx-small')
 
         os.makedirs(os.path.join(self.config.save_path, 'plots'), exist_ok=True)
         filename = os.path.join(self.config.save_path, 'plots', filename)

@@ -1,17 +1,17 @@
 import os
 
-MODEL_INDEX = 0 # [0, 1]   # Integer or list
+MODEL_INDEX = 0 # [0, 1, 2, 3]   # Integer or list
 
 class Configs:
     def __init__(self, model_index=MODEL_INDEX):
         self.gpu = True
         self.model_index = model_index
-        self.data_source = 'mnist' # 'mnist' if model_index == 0 else 'svhn' #'mnist', 'svhn', 'mnist-m'
+        self.data_source = 'mnist'# if model_index % 2 == 0 else 'svhn' #'mnist', 'svhn', 'mnist-m'
         self.data_target = 'svhn'
         self.total_epoch = 20 # 80 for batch 64
         self.batch_size = 64
         self.lr = 1e-3
-        self.run_VADA = False # Whether to run this as plan VADA: 
+        self.run_VADA = False #if model_index <= 1 else True # Whether to run this as plan VADA: 
                               # If True, automatically ignore lambda_div and lambda_agree
         self.lambda_closs = 5 # source cross entropy loss
         self.lambda_dom = 1 # discriminator
