@@ -8,7 +8,7 @@ from deep_model.model import build_small_model
 from trainer import Trainer
 from data.data_utils import get_mnist, get_svhn
 from data.data_loader import get_data_loader, get_lmdb_loader
-from config import Configs
+from config import Configs, MODEL_INDEX
 
 import argparse
 
@@ -29,9 +29,9 @@ def load_weights(net, path, gpu=True):
     return net
         
 
-def main():
+def main(model_index=MODEL_INDEX):
     #args = get_argument()
-    config = Configs(0)
+    config = Configs(model_index)
     net = build_small_model(config.ins_norm, False if config.lambda_div == 0 else True)
 
     #if config.mode in [0, -1] and not args.test_only:
@@ -65,4 +65,8 @@ def main():
 
 if __name__=='__main__':
     torch.multiprocessing.set_start_method('spawn')
-    main()
+    if type(MODEL_INDEX) is list:
+        for model_index in MODEL_INDEX:
+            main(model_index)
+    else:
+        main(MODEL_INDEX)

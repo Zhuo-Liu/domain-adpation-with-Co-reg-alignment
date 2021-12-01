@@ -10,6 +10,11 @@ from loss_function.loss_vat import VATLoss
 import copy
 import time
 
+from sklearn.manifold import TSNE
+import seaborn as sns
+import pandas as pd
+import matplotlib.pyplot as plt
+
 class Trainer():
     def __init__(self, nets, train_data_loader, val_data_loader, test_data_loader, config):
         if config.gpu:
@@ -78,6 +83,7 @@ class Trainer():
                     acc_best[idx] = acc
 
                 _ = self.val_(self.exp_net[idx], epoch, idx, mode='test')
+                _ = self.val_(self.exp_net[idx], epoch, idx, mode='plot')
 
 
     def train_1_epoch(self, epoch):
@@ -120,7 +126,7 @@ class Trainer():
                 svat_loss_list.append(svat_loss)
                 tvat_loss_list.append(tvat_loss)
 
-                slogits, sdom_logits, sfeats = self.nets[idx](simage)
+                slogits, sdom_logits, sfeats = self.nets[idx](simage)  # sfeats are features: id * channel * height * width
                 tlogits, tdom_logits, _ = self.nets[idx](timage, update_stats=True)
 
                 slogit_list.append(slogits)
@@ -163,9 +169,11 @@ class Trainer():
                 # Co-DA loss:
                 # div_loss: D_g(g_1,g_2)
                 # agree_loss: L_p(f_1,f_2;P_t)
-                #CCloss = 5*closs + self.config.lambda_dom * dom_loss + self.config.lambda_ent * ent_loss -\
-                #    self.config.lambda_div * div_loss + self.config.lambda_agree * agree_loss + svat_loss_list[idx] + tvat_loss_list[idx] * self.config.lambda_ent
-                CCloss = (5*closs + svat_loss_list[idx]) + 1e-2*(ent_loss +  tvat_loss_list[idx]) + 1*dom_loss + 0.0 * agree_loss - 0.0 * div_loss
+                CCloss = self.config.lambda_closs * closs + self.config.lambda_dom * dom_loss + self.config.lambda_ent * ent_loss \
+                    - (self.config.lambda_div if not self.config.run_VADA else 0) * div_loss \
+                    + (self.config.lambda_agree if not self.config.run_VADA else 0) * agree_loss \
+                    + svat_loss_list[idx] + tvat_loss_list[idx] * self.config.lambda_ent
+                #CCloss = (5*closs + svat_loss_list[idx]) + 1e-2*(ent_loss +  tvat_loss_list[idx]) + 1*dom_loss + 0.0 * agree_loss - 0.0 * div_loss
                 DDloss = dom_inv_loss
 
                 self.writer.add_scalar('net_{}/closs'.format(idx), float(closs), self.len_train_data * epoch + step)
@@ -209,15 +217,24 @@ class Trainer():
                 self.writer.add_images('vat_target', tmp_img, epoch)
 
 
-    def val_(self, net, epoch, idx, mode='val'):
+    def val_(self, net, epoch, idx, mode='val'):  # mode = 'val', 'test', 'plot'
         net = net.eval()
         loss = []
         total_correct = 0
         total_data = 0
         total_correct2 = 0
         total_data2 = 0
-        data = self.val_data if mode == 'val' else self.test_data
+        data = (self.val_data if mode == 'val' 
+                else self.test_data if mode == 'test'
+                else self.val_data)  # 'plot'
         pbar = tqdm(enumerate(data), total=len(data), ncols=100)
+
+        # For plotting
+        sfeats_all = []
+        tfeats_all = []
+        slabels_all = []
+        tlabels_all = []
+
         with torch.no_grad():
             for step, batchSample in pbar:
 
@@ -238,7 +255,9 @@ class Trainer():
                     dom_label = dom_label.cuda()
                     dom_inv_label = dom_inv_label.cuda()
 
-                logits, dom_logits, _ = net(torch.cat([simage, timage], 0))
+                #logits, dom_logits, _ = net(torch.cat([simage, timage], 0))
+                logits, dom_logits, feats = net(torch.cat([simage, timage], 0))  # Input is source images followed by target images
+                #print(feats.shape)
 
                 closs = self.criterion[idx](logits[:simage.size(0)], slabel).cpu()
                 ent_loss = cross_entropy_loss(logits[simage.size(0):]).cpu()
@@ -259,15 +278,23 @@ class Trainer():
 
                 pbar.set_description(mode+(" acc: %5f epoch %d" % (round(float(num_correct) / num_all, 5), epoch)))
 
+                if mode == 'plot':
+                    sfeats_all.append(feats[:simage.size(0)])
+                    tfeats_all.append(feats[simage.size(0):])
+                    slabels_all.extend(slabel)
+                    tlabels_all.extend(tlabel)
+
             acc = float(total_correct) / total_data
             acc2 = float(total_correct2) / total_data2
-            print('accuracy on source data is:',acc2)
-            if self.train_data is not None:
-                self.writer.add_scalar('net_{}/'.format(idx)+mode+'/acc', acc, epoch)
+            if mode != 'plot':
+                print('accuracy on source data is:', acc2)
+                print('accuracy on target data is:', acc)
+                if self.train_data is not None:
+                    self.writer.add_scalar('net_{}/'.format(idx)+mode+'/acc', acc, epoch)
 
             loss = np.mean(np.array(loss), 0)
 
-            if self.train_data is not None:
+            if self.train_data is not None and mode != 'plot':
                 self.writer.add_scalar('net_{}/'.format(idx)+mode+'/closs', float(loss[0]), epoch)
                 self.writer.add_scalar('net_{}/'.format(idx)+mode+'/dom_loss', float(loss[1]), epoch)
                 self.writer.add_scalar('net_{}/'.format(idx)+mode+'/dom_inv_loss', float(loss[2]), epoch)
@@ -275,6 +302,17 @@ class Trainer():
                 self.writer.add_scalar('net_{}/'.format(idx)+mode+'/entloss', float(loss[4]), epoch)
                 #self.writer.add_scalar('net_{}/'.format(idx)+mode+'/vatloss', float(loss[5]), epoch)
 
+            if mode == 'plot':
+                sfeats = torch.cat(sfeats_all, 0)
+                sfeats = torch.flatten(sfeats, start_dim=1)
+                tfeats = torch.cat(tfeats_all, 0)
+                tfeats = torch.flatten(tfeats, start_dim=1)
+                #print(sfeats.shape, len(slabels_all))
+                self.plot(sfeats, slabels_all, tfeats, tlabels_all, 
+                          filename=('net_{0}_epoch_{1}.png'.format(idx, epoch)),
+                          title='Net {0}, Epoch {1}'.format(idx, epoch),
+                          class_num=10)
+                
             return acc
 
 
@@ -308,3 +346,43 @@ class Trainer():
                 old_state_dict[key] = new_state_dict[key]
 
         self.exp_net[idx].load_state_dict(old_state_dict)
+
+    def plot(self, sdata, slabel, tdata, tlabel, filename='tsne_untitled.png',
+             title='tsne plot of certain data', class_num=10):
+        # Source in dark color, target in light color
+        # sdata and tdata are 2D matrices
+        tsne = TSNE(n_components=2, verbose=0, random_state=123)
+        data = torch.cat([sdata, tdata], 0).cpu()
+        slabel = [x.cpu() for x in slabel]
+        tlabel = [x.cpu() for x in tlabel]
+        Embedded = tsne.fit_transform(data)
+
+        #print("Plot!")
+        # Plot source
+        df1 = pd.DataFrame()
+        df1["y"] = [('s' + str(x.numpy())) for x in slabel]
+        df1["comp-1"] = Embedded[:sdata.size(0), 0]
+        df1["comp-2"] = Embedded[:sdata.size(0), 1]
+        df1.sort_values(by=['y'], inplace=True)  # So that labels appear in order
+        sns.scatterplot(x="comp-1", y="comp-2", hue=df1.y.tolist(), palette=sns.color_palette("deep", n_colors=class_num),
+                        data=df1).set(title=title)
+
+        # Plot target
+        df2 = pd.DataFrame()
+        df2["y"] = [('t' + str(x.numpy())) for x in tlabel]
+        df2["comp-1"] = Embedded[sdata.size(0):, 0]
+        df2["comp-2"] = Embedded[sdata.size(0):, 1]
+        df2.sort_values(by=['y'], inplace=True)
+        sns.scatterplot(x="comp-1", y="comp-2", hue=df2.y.tolist(), palette=sns.color_palette("pastel", n_colors=class_num),
+                        data=df2).set(title=title)
+
+        # Fix legends
+        #handles, labels = plt.gca().get_legend_handles_labels()
+        #order = [(i//2)+(i%2)*10 for i in range(20)]
+        #plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], fontsize='xx-small')
+        plt.legend(ncol=2, fontsize='xx-small')
+
+        os.makedirs(os.path.join(self.config.save_path, 'plots'), exist_ok=True)
+        filename = os.path.join(self.config.save_path, 'plots', filename)
+        plt.savefig(filename)
+        plt.clf()
