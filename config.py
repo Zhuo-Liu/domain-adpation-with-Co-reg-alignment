@@ -1,13 +1,13 @@
 import os
 
-MODEL_INDEX = 0 # [0, 1, 2, 3]   # Integer or list
+MODEL_INDEX = 1 # [0, 1, 2, 3]   # Integer or list
 
 class Configs:
     def __init__(self, model_index=MODEL_INDEX):
         self.gpu = True
         self.model_index = model_index
-        self.data_source = 'mnist'# if model_index % 2 == 0 else 'svhn' #'mnist', 'svhn', 'mnist-m'
-        self.data_target = 'svhn'
+        self.data_source = 'svhn'# if model_index % 2 == 0 else 'svhn' #'mnist', 'svhn', 'mnist-m'
+        self.data_target = 'mnist'
         self.total_epoch = 20 # 80 for batch 64
         self.batch_size = 64
         self.lr = 1e-3

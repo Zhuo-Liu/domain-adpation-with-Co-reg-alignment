@@ -1,0 +1,14 @@
+mode: 0
+model_index:1
+source: svhn
+target: mnist
+save_path: ./model_1
+total_epoch: 20
+batch_size: 64
+lr: 0.001
+lambda_dom: 1
+lambda_ent: 0.01
+vat_epsilon: 1.0
+lambda_div: 0.001
+div_margin: 10
+lambda_agree: 0.1

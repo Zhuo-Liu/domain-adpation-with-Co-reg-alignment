@@ -246,7 +246,7 @@ def create_lmdb(model_name='MNIST'):
 if __name__=='__main__':
     #create_lmdb_mnist('train')
     #create_lmdb_svhn('train')
-    create_lmdb('MNIST')
-    create_lmdb('SVHN')
+    #create_lmdb('MNIST')
+    #create_lmdb('SVHN')
     create_lmdb('MNIST-M')
     
