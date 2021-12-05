@@ -23,4 +23,3 @@ Run ./data/data_utils.py, this will create "./data/dataset/MNIST/lmdb", "./data/
 
 If "mdb_put: MDB_MAP_FULL: Environment mapsize limit reached" is encountered, consider increasing the "map_size" (line 87 data_utils.py) to 3e9. 
 
-## 3.
