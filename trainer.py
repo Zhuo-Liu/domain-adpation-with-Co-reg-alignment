@@ -71,6 +71,9 @@ class Trainer():
 
     def train_all(self):
         acc_best = [0] * len(self.exp_net)
+        for idx, net in enumerate(self.exp_net):
+            _ = self.val_(self.exp_net[idx], -1, idx, mode='plot')
+        
         for epoch in range(self.config.total_epoch):
             self.train_1_epoch(epoch)
             #self.save_net(self.exp_net, 'model_'+str(epoch+1))
@@ -174,6 +177,8 @@ class Trainer():
                     + (self.config.lambda_agree if not self.config.run_VADA else 0) * agree_loss \
                     + svat_loss_list[idx] + tvat_loss_list[idx] * self.config.lambda_ent
                 #CCloss = (5*closs + svat_loss_list[idx]) + 1e-2*(ent_loss +  tvat_loss_list[idx]) + 1*dom_loss + 0.0 * agree_loss - 0.0 * div_loss
+                if self.config.run_noadapt:
+                    CCloss = self.config.lambda_closs * closs
                 DDloss = dom_inv_loss
 
                 self.writer.add_scalar('net_{}/closs'.format(idx), float(closs), self.len_train_data * epoch + step)
