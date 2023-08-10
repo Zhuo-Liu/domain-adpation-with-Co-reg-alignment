@@ -1,6 +1,10 @@
 # co-regularied-alignment-for-domain-adaptation
 
-Original repository: https://github.com/jakc4103/co-regularized-alignment-for-domain-adaptation
+## Strategy
+https://github.com/Zhuo-Liu/domain-adpation-with-Co-reg-alignment/blob/main/strategy_document.pdf
+
+## Result
+https://github.com/Zhuo-Liu/domain-adpation-with-Co-reg-alignment/blob/main/result.pdf
 
 ## 1. Prerequisite
 * python 3
@@ -23,3 +27,4 @@ Run ./data/data_utils.py, this will create "./data/dataset/MNIST/lmdb", "./data/
 
 If "mdb_put: MDB_MAP_FULL: Environment mapsize limit reached" is encountered, consider increasing the "map_size" (line 87 data_utils.py) to 3e9. 
 
+Original repository: https://github.com/jakc4103/co-regularized-alignment-for-domain-adaptation
